@@ -9,6 +9,10 @@ from ui.ui import Ui_MainWindow
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import time, threading
+import tread
+
+
 
 
 
@@ -24,17 +28,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.doubleSpinBox_2.valueChanged.connect(lambda: self.set_Kvalue())
         self.doubleSpinBox_3.valueChanged.connect(lambda: self.set_Radian())
         self.pushButton_One.clicked.connect(lambda: self.start_simulation())
-        self.pushButton_Auto.clicked.connect(lambda: self.start_simulation_Auto())
-        self.auto.connect(lambda: self.show_figure())
-        self.auto1.connect(lambda: self.start_simulation_Auto())
+        self.pushButton_Auto.clicked.connect(lambda: self.auto_tread())
+        #self.auto.connect(lambda: self.show_figure())
+        #self.auto1.connect(lambda: self.auto_tread())
 
     # Parameter Init
 
         self.k = self.doubleSpinBox_2.value()
         self.radian = self.doubleSpinBox_3.value()
-        self.fig = Figure(figsize=(600, 600), dpi=100, facecolor=(1, 1, 1), edgecolor=(0, 0, 0))
-        self.canvas = FigureCanvas(self.fig)
-        self.ax = self.fig.add_subplot(111)
         self.wavelength = 632.8
         self.I0 = None
         self.I = None
@@ -63,6 +64,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             #self.gridLayout.removeWidget(self.gridLayout.item)
             self.gridLayout.addWidget(FigureCanvas(self.fig))
 
+    def auto_tread(self):
+        self.bwThread = tread.BigWorkThread(int(1))
+        self.bwThread.finishSignal.connect(self.show_figure())
+        self.bwThread.start()
 
     def start_simulation_Auto(self):
 
@@ -80,19 +85,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 time.sleep(1)
                 self.auto.emit(1)
 
-
-
     def show_figure(self):
         print('run this')
+        self.fig = Figure(figsize=(600, 600), dpi=100, facecolor=(1, 1, 1), edgecolor=(0, 0, 0))
+        self.canvas = FigureCanvas(self.fig)
+        self.ax = self.fig.add_subplot(111)
 
-        for j in range(self.gridLayout.count()): self.gridLayout.itemAt(j).widget().close()
-        #for i in range(self.gridLayout.count()): self.gridLayout.removeItem(self.gridLayout.itemAt(i))
+        #for j in range(self.gridLayout.count()): self.gridLayout.itemAt(j).widget().close()
+        for i in range(self.gridLayout.count()): self.gridLayout.removeItem(self.gridLayout.itemAt(i))
         self.ax.plot(self.I0, color='red')
         self.ax.plot(self.I, color='blue')
 
         self.gridLayout.addWidget(self.canvas)
-        if self.workDistance <= 10:
-            self.auto1.emit('1')
+        #if self.workDistance <= 10:
+        #self.auto1.connect(self.auto_tread())
 
 
 def init_plot():
