@@ -22,18 +22,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
         self.setupUi(self)
-
-    # SIGNAL CONNECT
-
-        self.doubleSpinBox_2.valueChanged.connect(lambda: self.set_Kvalue())
-        self.doubleSpinBox_3.valueChanged.connect(lambda: self.set_Radian())
-        self.pushButton_One.clicked.connect(lambda: self.start_simulation())
-        self.pushButton_Auto.clicked.connect(lambda: self.auto_tread())
-        #self.auto.connect(lambda: self.show_figure())
-        #self.auto1.connect(lambda: self.auto_tread())
+        self.timer = QTimer(self)
 
     # Parameter Init
-
         self.k = self.doubleSpinBox_2.value()
         self.radian = self.doubleSpinBox_3.value()
         self.wavelength = 632.8
@@ -41,71 +32,60 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.I = None
         self.workDistance = 0
 
+    # SIGNAL CONNECT
+
+        self.doubleSpinBox_2.valueChanged.connect(lambda: self.set_Kvalue())
+        self.doubleSpinBox_3.valueChanged.connect(lambda: self.set_Radian())
+        self.pushButton_One.clicked.connect(lambda: self.start_simulation())
+        self.pushButton_Auto.clicked.connect(lambda: self.auto_tread())
+        #tread.BigWorkThread.finishSignal.connect(lambda: self.tread_setdata())
+
+        self.bwThread = tread.BigWorkThread(self.workDistance, self.k, self.radian, self.wavelength)
+        self.bwThread.updateSignal.connect(self.tread_setdata)
+        self.bwThread.finishSignal.connect(self.tread_finish)
+
+        self.timer.timeout.connect(lambda: self.show_figure())  # 计时结束调用operate()方法
+        self.timer.start(200)
+
     def set_Kvalue(self):
         self.k = self.doubleSpinBox_2.value()
 
     def set_Radian(self):
         self.radian = self.doubleSpinBox_3.value()
 
-    def start_simulation(self):
-
-        if self.k == 0.0 or self.radian == 0.0:
-            QMessageBox.information(self, "warning", "Please set the value of Radian or K")
-        else:
-            simTest = sim(k=self.k, radian=self.radian, wavelength=632.8)
-            i = int(self.doubleSpinBox.value())
-            print(i)
-            I0, I = simTest.simluation(i * 10000)
-
-            self.ax.plot(I0, color='red')
-            for i in range(self.gridLayout.count()): self.gridLayout.itemAt(i).widget().close()
-            self.ax.plot(I, color='blue')
-            for i in range(self.gridLayout.count()): self.gridLayout.itemAt(i).widget().close()
-            #self.gridLayout.removeWidget(self.gridLayout.item)
-            self.gridLayout.addWidget(FigureCanvas(self.fig))
 
     def auto_tread(self):
-        self.bwThread = tread.BigWorkThread(int(1))
-        self.bwThread.finishSignal.connect(self.show_figure())
+        self.pushButton_Auto.setEnabled(False)
         self.bwThread.start()
 
-    def start_simulation_Auto(self):
+    def tread_setdata(self, data):
+        self.I0 = data[0]
+        self.I = data[1]
+        self.workDistance = data[2]
 
-        if self.k == 0.0 or self.radian == 0.0:
-            QMessageBox.information(self, "warning", "Please set the value of Radian or K")
-        else:
-            simTest = sim(k=self.k, radian=self.radian, wavelength=632.8)
-
-            startPoint = self.workDistance * 10000
-            self.I0, self.I = simTest.simluation(startPoint)
-            if self.workDistance > 10:
-                self.workDistance = 0
-            else:
-                self.workDistance += 1
-                time.sleep(1)
-                self.auto.emit(1)
+    def tread_finish(self, finish):
+        QMessageBox.information(self, "Finish", finish)
+        self.pushButton_Auto.setEnabled(True)
+        self.workDistance = 0
 
     def show_figure(self):
-        print('run this')
-        self.fig = Figure(figsize=(600, 600), dpi=100, facecolor=(1, 1, 1), edgecolor=(0, 0, 0))
+
+        self.fig = Figure(figsize=(900, 900), dpi=100, facecolor=(1, 1, 1), edgecolor=(0, 0, 0))
         self.canvas = FigureCanvas(self.fig)
         self.ax = self.fig.add_subplot(111)
 
-        #for j in range(self.gridLayout.count()): self.gridLayout.itemAt(j).widget().close()
         for i in range(self.gridLayout.count()): self.gridLayout.removeItem(self.gridLayout.itemAt(i))
-        self.ax.plot(self.I0, color='red')
-        self.ax.plot(self.I, color='blue')
+        if self.I0 is not None and self.I is not None:
+            self.ax.plot(self.I0, color='red')
+            self.ax.plot(self.I, color='blue')
 
-        self.gridLayout.addWidget(self.canvas)
-        #if self.workDistance <= 10:
-        #self.auto1.connect(self.auto_tread())
+            self.gridLayout.addWidget(self.canvas)
 
 
 def init_plot():
-    fig = Figure(figsize=(600, 600), dpi=100, facecolor=(1, 1, 1), edgecolor=(0, 0, 0))
+    fig = Figure(figsize=(900, 900), dpi=100, facecolor=(1, 1, 1), edgecolor=(0, 0, 0))
     canvas = FigureCanvas(fig)
     ax = fig.add_subplot(111)
-    # generate the canvas to display the plot
     return canvas
 
 if __name__ == '__main__':

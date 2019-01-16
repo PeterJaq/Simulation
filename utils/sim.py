@@ -14,11 +14,11 @@ class sim():
         self.cal_input(dict_I0=self.dict_I0)
 
     def cal_input(self, dict_I0):
-        sig = math.sqrt(2000)
+        sig = math.sqrt(20000)
         u = 10000
 
         for i in dict_I0:
-            dict_I0[i] = np.exp(-(i - u) ** 2 / (1000 * sig ** 2)) / (math.sqrt(2 * math.pi) * sig) * 65526
+            dict_I0[i] = np.exp(-(i - u) ** 2 / (1000 * sig ** 2)) / (math.sqrt(2 * math.pi) * sig) * 6000000
 
         return dict_I0
 
